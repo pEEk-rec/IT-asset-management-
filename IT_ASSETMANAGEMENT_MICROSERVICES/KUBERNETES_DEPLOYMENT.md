@@ -90,13 +90,17 @@ kubectl apply -f k8s/frontend/service.yaml
 
 # 8. Horizontal Pod Autoscaler
 kubectl apply -f k8s/hpa.yaml
+
+# 9. Observability (Prometheus & Grafana)
+kubectl apply -f k8s/monitoring/
 ```
 
 ## Step 5: Verify Deployment
 
 ```bash
-# Check all pods
+# Check all pods (including monitoring)
 kubectl get pods
+
 
 # Check all services
 kubectl get services
@@ -122,8 +126,16 @@ minikube service api-gateway --url
 minikube service frontend-microservices --url
 
 # Or access via NodePort
-# API Gateway: http://<minikube-ip>:31080
-# Frontend: http://<minikube-ip>:31000
+# Forward Frontend port
+kubectl port-forward service/frontend-microservices 4000:3000
+
+# Access at http://localhost:8080 and http://localhost:4000
+
+# Access Grafana Dashboard
+# Get Grafana URL
+minikube service grafana --url
+# Or use NodePort: http://<minikube-ip>:32000
+# Default Login: admin / admin
 ```
 
 ## Step 7: Test the Application

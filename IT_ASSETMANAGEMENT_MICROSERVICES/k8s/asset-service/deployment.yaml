@@ -11,6 +11,9 @@ spec:
     metadata:
       labels:
         app: asset-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5102"
     spec:
       containers:
         - name: asset-service
