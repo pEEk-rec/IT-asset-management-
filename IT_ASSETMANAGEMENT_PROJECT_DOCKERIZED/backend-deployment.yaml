@@ -1,0 +1,53 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asset-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: asset-backend
+  template:
+    metadata:
+      labels:
+        app: asset-backend
+    spec:
+      containers:
+        - name: asset-backend
+          image: asset-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5001 # ✅ FIXED: Was 5000
+          resources: # ✅ ADDED: Prevents "noisy neighbor" issues
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          env:
+            - name: MONGODB_URI
+              value: "mongodb://admin:password@mongodb:27017/it_assets?authSource=admin"
+            - name: MONGO_URI # ✅ ADDED: Some apps use this instead
+              value: "mongodb://admin:password@mongodb:27017/it_assets?authSource=admin"
+            - name: DB_HOST # ✅ ADDED: In case backend builds connection string
+              value: "mongodb"
+            - name: PORT
+              value: "5001" # ✅ FIXED: Was 5000
+            - name: JWT_SECRET # ✅ ADDED: For signup/login
+              value: "your-secret-key-change-in-production"
+            - name: NODE_ENV
+              value: "production"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asset-backend
+spec:
+  selector:
+    app: asset-backend
+  ports:
+    - port: 5001 # ✅ FIXED: Was 5000
+      targetPort: 5001
+      nodePort: 30001 # ✅ ADDED: For browser access
+  type: NodePort

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-microservices
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-microservices
+  template:
+    metadata:
+      labels:
+        app: frontend-microservices
+    spec:
+      containers:
+        - name: frontend
+          image: frontend-microservices:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: VITE_API_URL
+              value: "http://192.168.49.2:31080"
+            - name: REACT_APP_API_URL
+              value: "http://192.168.49.2:31080"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

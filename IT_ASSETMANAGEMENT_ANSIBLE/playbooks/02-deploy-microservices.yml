@@ -1,0 +1,110 @@
+---
+# Playbook 2: Deploy Microservices via Docker Compose
+# Usage: ansible-playbook playbooks/02-deploy-microservices.yml
+
+- name: Deploy IT Asset Management Microservices
+  hosts: localhost
+  gather_facts: true
+
+  pre_tasks:
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_check
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if Docker is not installed
+      fail:
+        msg: "Docker is not installed. Please run 01-setup-docker.yml first."
+      when: docker_check.rc != 0
+
+    - name: Check if Docker Compose is installed
+      command: docker-compose --version
+      register: compose_check
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if Docker Compose is not installed
+      fail:
+        msg: "Docker Compose is not installed. Please run 01-setup-docker.yml first."
+      when: compose_check.rc != 0
+
+  tasks:
+    - name: Stop any existing containers
+      command: docker-compose -f docker-compose.microservices.yaml down
+      args:
+        chdir: /mnt/e/SEM-5/Cloud_Computing/IT_asset/IT_ASSETMANAGEMENT_MICROSERVICES
+      ignore_errors: true
+
+    - name: Build and deploy microservices
+      command: docker-compose -f docker-compose.microservices.yaml up --build -d
+      args:
+        chdir: /mnt/e/SEM-5/Cloud_Computing/IT_asset/IT_ASSETMANAGEMENT_MICROSERVICES
+      register: deploy_output
+
+    - name: Wait for services to initialize
+      pause:
+        seconds: 45
+        prompt: "Waiting for services to start..."
+
+    - name: Check API Gateway health
+      uri:
+        url: "http://localhost:8080/health"
+        status_code: 200
+        return_content: yes
+      register: gateway_health
+      retries: 10
+      delay: 5
+      until: gateway_health.status == 200
+
+    - name: Check Auth Service health
+      uri:
+        url: "http://localhost:5101/health"
+        status_code: 200
+      register: auth_health
+      retries: 5
+      delay: 3
+      until: auth_health.status == 200
+      ignore_errors: true
+
+    - name: Check Asset Service health
+      uri:
+        url: "http://localhost:5102/health"
+        status_code: 200
+      register: asset_health
+      retries: 5
+      delay: 3
+      until: asset_health.status == 200
+      ignore_errors: true
+
+    - name: Check User Service health
+      uri:
+        url: "http://localhost:5103/health"
+        status_code: 200
+      register: user_health
+      retries: 5
+      delay: 3
+      until: user_health.status == 200
+      ignore_errors: true
+
+    - name: Get running containers
+      command: docker-compose -f docker-compose.microservices.yaml ps
+      args:
+        chdir: /mnt/e/SEM-5/Cloud_Computing/IT_asset/IT_ASSETMANAGEMENT_MICROSERVICES
+      register: containers_status
+      changed_when: false
+
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "========================================="
+          - "Microservices Deployment Complete!"
+          - "========================================="
+          - "API Gateway: {{ 'HEALTHY' if gateway_health.status == 200 else 'UNHEALTHY' }} (http://localhost:8080)"
+          - "Auth Service: {{ 'HEALTHY' if auth_health.status|default(0) == 200 else 'UNHEALTHY' }} (http://localhost:5101)"
+          - "Asset Service: {{ 'HEALTHY' if asset_health.status|default(0) == 200 else 'UNHEALTHY' }} (http://localhost:5102)"
+          - "User Service: {{ 'HEALTHY' if user_health.status|default(0) == 200 else 'UNHEALTHY' }} (http://localhost:5103)"
+          - "Frontend: http://localhost:4000"
+          - "========================================="
+          - "Container Status:"
+          - "{{ containers_status.stdout }}"

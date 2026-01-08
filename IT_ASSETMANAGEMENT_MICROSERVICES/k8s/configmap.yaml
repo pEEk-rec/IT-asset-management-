@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microservices-config
+data:
+  # Service URLs
+  AUTH_SERVICE_URL: "http://auth-service:5101"
+  USER_SERVICE_URL: "http://user-service:5103"
+  ASSET_SERVICE_URL: "http://asset-service:5102"
+
+  # Ports
+  AUTH_SERVICE_PORT: "5101"
+  USER_SERVICE_PORT: "5103"
+  ASSET_SERVICE_PORT: "5102"
+  API_GATEWAY_PORT: "8080"
+
+  # MongoDB URIs (without credentials)
+  MONGODB_AUTH_HOST: "mongodb-auth"
+  MONGODB_USER_HOST: "mongodb-user"
+  MONGODB_ASSET_HOST: "mongodb-asset"
+  MONGODB_PORT: "27017"
+
+  # Database names
+  AUTH_DB_NAME: "auth_db"
+  USER_DB_NAME: "user_db"
+  ASSET_DB_NAME: "asset_db"

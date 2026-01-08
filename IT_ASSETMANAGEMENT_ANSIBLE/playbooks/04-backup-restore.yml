@@ -1,0 +1,118 @@
+---
+# Playbook 4: Backup and Restore Database Volumes
+# Usage:
+#   ansible-playbook playbooks/04-backup-restore.yml -e "action=backup"
+#   ansible-playbook playbooks/04-backup-restore.yml -e "action=restore backup_file=backup-2026-01-08.tar.gz"
+#   ansible-playbook playbooks/04-backup-restore.yml -e "action=list"
+
+- name: Backup and Restore Microservices Databases
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    backup_timestamp: "{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+    backup_filename: "microservices-backup-{{ backup_timestamp }}.tar.gz"
+    backup_path: "{{ backup_dir }}/{{ backup_filename }}"
+
+  pre_tasks:
+    - name: Validate action
+      fail:
+        msg: "Action must be 'backup', 'restore', or 'list'"
+      when: action not in ['backup', 'restore', 'list']
+
+    - name: Ensure backup directory exists
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: "0755"
+
+  tasks:
+    # Backup tasks
+    - name: Stop services before backup
+      command: docker-compose -f {{ docker_compose_file }} stop
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'backup'
+
+    - name: Create backup of MongoDB volumes
+      command: >
+        docker run --rm
+        -v it_assetmanagement_microservices_mongo-auth-data:/data/auth
+        -v it_assetmanagement_microservices_mongo-asset-data:/data/asset
+        -v it_assetmanagement_microservices_mongo-user-data:/data/user
+        -v {{ backup_dir }}:/backup
+        ubuntu tar czf /backup/{{ backup_filename }} /data
+      when: action == 'backup'
+
+    - name: Start services after backup
+      command: docker-compose -f {{ docker_compose_file }} up -d
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'backup'
+
+    - name: Display backup success message
+      debug:
+        msg:
+          - "Backup completed successfully!"
+          - "Backup file: {{ backup_path }}"
+          - "Timestamp: {{ backup_timestamp }}"
+      when: action == 'backup'
+
+    # Restore tasks
+    - name: Validate backup file exists
+      stat:
+        path: "{{ backup_dir }}/{{ backup_file }}"
+      register: backup_file_stat
+      when: action == 'restore'
+
+    - name: Fail if backup file not found
+      fail:
+        msg: "Backup file {{ backup_dir }}/{{ backup_file }} not found"
+      when: action == 'restore' and not backup_file_stat.stat.exists
+
+    - name: Stop services before restore
+      command: docker-compose -f {{ docker_compose_file }} down
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'restore'
+
+    - name: Restore MongoDB volumes from backup
+      command: >
+        docker run --rm
+        -v it_assetmanagement_microservices_mongo-auth-data:/data/auth
+        -v it_assetmanagement_microservices_mongo-asset-data:/data/asset
+        -v it_assetmanagement_microservices_mongo-user-data:/data/user
+        -v {{ backup_dir }}:/backup
+        ubuntu tar xzf /backup/{{ backup_file }} -C /
+      when: action == 'restore'
+
+    - name: Start services after restore
+      command: docker-compose -f {{ docker_compose_file }} up -d
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'restore'
+
+    - name: Display restore success message
+      debug:
+        msg:
+          - "Restore completed successfully!"
+          - "Restored from: {{ backup_dir }}/{{ backup_file }}"
+      when: action == 'restore'
+
+    # List backups
+    - name: Find all backup files
+      find:
+        paths: "{{ backup_dir }}"
+        patterns: "microservices-backup-*.tar.gz"
+      register: backup_files
+      when: action == 'list'
+
+    - name: Display available backups
+      debug:
+        msg: "{{ backup_files.files | map(attribute='path') | list }}"
+      when: action == 'list'
+
+    - name: Display no backups message
+      debug:
+        msg: "No backups found in {{ backup_dir }}"
+      when: action == 'list' and backup_files.matched == 0

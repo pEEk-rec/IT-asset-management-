@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # API Gateway
+  # ========================================
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: api-gateway-microservices
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - AUTH_SERVICE_URL=http://auth-service:5101
+      - USER_SERVICE_URL=http://user-service:5103
+      - ASSET_SERVICE_URL=http://asset-service:5102
+    depends_on:
+      - auth-service
+      - user-service
+      - asset-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # Auth Service
+  # ========================================
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service-microservices
+    ports:
+      - "5101:5101"
+    environment:
+      - PORT=5101
+      - MONGODB_URI=mongodb://mongodb-auth:27017/auth_db
+      - JWT_SECRET=your-secret-key-change-in-production-microservices
+    depends_on:
+      - mongodb-auth
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # Asset Management Service
+  # ========================================
+  asset-service:
+    build: ./services/asset-service
+    container_name: asset-service-microservices
+    ports:
+      - "5102:5102"
+    environment:
+      - PORT=5102
+      - MONGODB_URI=mongodb://mongodb-asset:27017/asset_db
+      - AUTH_SERVICE_URL=http://auth-service:5101
+      - USER_SERVICE_URL=http://user-service:5103
+    depends_on:
+      - mongodb-asset
+      - auth-service
+      - user-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # User Service
+  # ========================================
+  user-service:
+    build: ./services/user-service
+    container_name: user-service-microservices
+    ports:
+      - "5103:5103"
+    environment:
+      - PORT=5103
+      - MONGODB_URI=mongodb://mongodb-user:27017/user_db
+      - AUTH_SERVICE_URL=http://auth-service:5101
+    depends_on:
+      - mongodb-user
+      - auth-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # MongoDB for Auth Service
+  # ========================================
+  mongodb-auth:
+    image: mongo:latest
+    container_name: mongodb-auth-microservices
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-auth-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # MongoDB for Asset Service
+  # ========================================
+  mongodb-asset:
+    image: mongo:latest
+    container_name: mongodb-asset-microservices
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo-asset-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # MongoDB for User Service
+  # ========================================
+  mongodb-user:
+    image: mongo:latest
+    container_name: mongodb-user-microservices
+    ports:
+      - "27020:27017"
+    volumes:
+      - mongo-user-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # Frontend
+  # ========================================
+  frontend:
+    build: ./ui
+    container_name: frontend-microservices
+    ports:
+      - "4000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+      - REACT_APP_API_URL=http://localhost:8080
+    depends_on:
+      - api-gateway
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  microservices-network:
+    driver: bridge
+
+# ========================================
+# Volumes
+# ========================================
+volumes:
+  mongo-auth-data:
+    driver: local
+  mongo-asset-data:
+    driver: local
+  mongo-user-data:
+    driver: local

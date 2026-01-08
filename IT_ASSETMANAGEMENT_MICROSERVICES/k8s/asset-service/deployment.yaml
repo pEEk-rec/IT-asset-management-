@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asset-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: asset-service
+  template:
+    metadata:
+      labels:
+        app: asset-service
+    spec:
+      containers:
+        - name: asset-service
+          image: asset-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5102
+          env:
+            - name: PORT
+              value: "5102"
+            - name: MONGODB_URI
+              value: "mongodb://mongodb-asset:27017/asset_db"
+            - name: AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: microservices-config
+                  key: AUTH_SERVICE_URL
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: microservices-config
+                  key: USER_SERVICE_URL
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5102
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5102
+            initialDelaySeconds: 10
+            periodSeconds: 5

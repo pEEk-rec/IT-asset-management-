@@ -1,0 +1,63 @@
+---
+# Microservices deployment role
+
+- name: Ensure microservices directory exists
+  file:
+    path: "{{ microservices_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Check if docker-compose file exists
+  stat:
+    path: "{{ docker_compose_file }}"
+  register: compose_file
+
+- name: Fail if docker-compose file not found
+  fail:
+    msg: "Docker Compose file not found at {{ docker_compose_file }}"
+  when: not compose_file.stat.exists
+
+- name: Pull latest images (if any)
+  community.docker.docker_compose:
+    project_src: "{{ microservices_path }}"
+    files:
+      - docker-compose.microservices.yaml
+    pull: yes
+  ignore_errors: true
+
+- name: Build and start all microservices
+  community.docker.docker_compose:
+    project_src: "{{ microservices_path }}"
+    files:
+      - docker-compose.microservices.yaml
+    build: yes
+    state: present
+  register: compose_output
+
+- name: Wait for services to be healthy
+  pause:
+    seconds: 30
+
+- name: Check service health - API Gateway
+  uri:
+    url: "http://localhost:8080/health"
+    status_code: 200
+  register: gateway_health
+  retries: 5
+  delay: 5
+  until: gateway_health.status == 200
+  ignore_errors: true
+
+- name: Check service health - Auth Service
+  uri:
+    url: "http://localhost:5101/health"
+    status_code: 200
+  register: auth_health
+  retries: 5
+  delay: 5
+  until: auth_health.status == 200
+  ignore_errors: true
+
+- name: Display deployment status
+  debug:
+    msg: "Microservices deployment completed. Gateway: {{ gateway_health.status | default('N/A') }}, Auth: {{ auth_health.status | default('N/A') }}"

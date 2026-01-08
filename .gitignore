@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+package-lock.json
+__pycache__/
+*.pyc
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Build Artifacts
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+
+# IDE & Editor
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Ansible
+*.retry
+.ansible/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backups
+backups/
+*.bak
+*.tar.gz
+
+# OS specific
+Thumbs.db
+
+# Project Specific
+# Exclude the MongoDB data directories if they are mapped locally
+mongo-auth-data/
+mongo-asset-data/
+mongo-user-data/

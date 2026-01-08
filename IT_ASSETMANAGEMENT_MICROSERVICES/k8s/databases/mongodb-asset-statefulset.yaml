@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb-asset
+spec:
+  serviceName: mongodb-asset
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb-asset
+  template:
+    metadata:
+      labels:
+        app: mongodb-asset
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+              name: mongodb
+          volumeMounts:
+            - name: mongo-asset-storage
+              mountPath: /data/db
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-asset-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-asset
+spec:
+  selector:
+    app: mongodb-asset
+  ports:
+    - port: 27017
+      targetPort: 27017
+  clusterIP: None

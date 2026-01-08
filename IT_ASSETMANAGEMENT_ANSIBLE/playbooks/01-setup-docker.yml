@@ -1,0 +1,27 @@
+---
+# Playbook 1: Setup Docker and Docker Compose
+# Usage: ansible-playbook playbooks/01-setup-docker.yml
+
+- name: Setup Docker and Docker Compose
+  hosts: localhost
+  become: yes
+  roles:
+    - docker
+
+  post_tasks:
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version_output
+      changed_when: false
+
+    - name: Verify Docker Compose installation
+      command: docker-compose --version
+      register: compose_version_output
+      changed_when: false
+
+    - name: Display installation results
+      debug:
+        msg:
+          - "Docker installed: {{ docker_version_output.stdout }}"
+          - "Docker Compose installed: {{ compose_version_output.stdout }}"
+          - "Installation complete! You may need to log out and back in for group changes to take effect."

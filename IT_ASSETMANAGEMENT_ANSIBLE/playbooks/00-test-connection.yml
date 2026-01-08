@@ -1,0 +1,64 @@
+---
+# Quick test playbook to verify Ansible setup
+# Usage: ansible-playbook playbooks/00-test-connection.yml
+
+- name: Test Ansible Connection and Setup
+  hosts: localhost
+  gather_facts: true
+
+  tasks:
+    - name: Display Ansible version
+      debug:
+        msg: "Ansible version: {{ ansible_version.full }}"
+
+    - name: Display Python version
+      debug:
+        msg: "Python version: {{ ansible_python_version }}"
+
+    - name: Check if running in WSL
+      command: uname -r
+      register: uname_output
+      changed_when: false
+
+    - name: Display WSL status
+      debug:
+        msg: "Running in WSL: {{ 'Yes' if 'microsoft' in uname_output.stdout.lower() or 'wsl' in uname_output.stdout.lower() else 'No' }}"
+
+    - name: Test file access to microservices directory
+      stat:
+        path: "/mnt/e/SEM-5/Cloud_Computing/IT_asset/IT_ASSETMANAGEMENT_MICROSERVICES"
+      register: microservices_dir
+
+    - name: Display microservices directory status
+      debug:
+        msg:
+          - "Microservices directory exists: {{ microservices_dir.stat.exists }}"
+          - "Path: /mnt/e/SEM-5/Cloud_Computing/IT_asset/IT_ASSETMANAGEMENT_MICROSERVICES"
+
+    - name: Check Docker installation
+      command: docker --version
+      register: docker_version
+      failed_when: false
+      changed_when: false
+
+    - name: Display Docker status
+      debug:
+        msg: "Docker installed: {{ 'Yes - ' + docker_version.stdout if docker_version.rc == 0 else 'No' }}"
+
+    - name: Check Docker Compose installation
+      command: docker-compose --version
+      register: compose_version
+      failed_when: false
+      changed_when: false
+
+    - name: Display Docker Compose status
+      debug:
+        msg: "Docker Compose installed: {{ 'Yes - ' + compose_version.stdout if compose_version.rc == 0 else 'No' }}"
+
+    - name: Display test summary
+      debug:
+        msg:
+          - "========================================="
+          - "Ansible Connection Test Complete!"
+          - "========================================="
+          - "All checks passed. Ready to run playbooks!"

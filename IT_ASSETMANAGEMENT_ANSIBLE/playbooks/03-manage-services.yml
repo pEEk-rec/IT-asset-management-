@@ -1,0 +1,96 @@
+---
+# Playbook 3: Manage Microservices (Start/Stop/Restart/Logs)
+# Usage:
+#   ansible-playbook playbooks/03-manage-services.yml -e "action=start"
+#   ansible-playbook playbooks/03-manage-services.yml -e "action=stop"
+#   ansible-playbook playbooks/03-manage-services.yml -e "action=restart"
+#   ansible-playbook playbooks/03-manage-services.yml -e "action=restart service=auth-service"
+#   ansible-playbook playbooks/03-manage-services.yml -e "action=logs service=api-gateway"
+#   ansible-playbook playbooks/03-manage-services.yml -e "action=status"
+
+- name: Manage Microservices
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    valid_actions:
+      - start
+      - stop
+      - restart
+      - logs
+      - status
+      - ps
+
+  pre_tasks:
+    - name: Validate action parameter
+      fail:
+        msg: "Invalid action '{{ action | default('NONE') }}'. Valid actions: {{ valid_actions | join(', ') }}"
+      when: action is not defined or action not in valid_actions
+
+  tasks:
+    - name: Start all services
+      command: docker-compose -f {{ docker_compose_file }} up -d
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'start'
+
+    - name: Stop all services
+      command: docker-compose -f {{ docker_compose_file }} down
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'stop'
+
+    - name: Restart all services
+      command: docker-compose -f {{ docker_compose_file }} restart
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'restart' and service is not defined
+
+    - name: Restart specific service
+      command: docker-compose -f {{ docker_compose_file }} restart {{ service }}
+      args:
+        chdir: "{{ microservices_path }}"
+      when: action == 'restart' and service is defined
+
+    - name: View logs for specific service
+      command: docker-compose -f {{ docker_compose_file }} logs --tail=50 {{ service }}
+      args:
+        chdir: "{{ microservices_path }}"
+      register: service_logs
+      when: action == 'logs' and service is defined
+
+    - name: Display service logs
+      debug:
+        msg: "{{ service_logs.stdout_lines }}"
+      when: action == 'logs' and service is defined
+
+    - name: View logs for all services
+      command: docker-compose -f {{ docker_compose_file }} logs --tail=20
+      args:
+        chdir: "{{ microservices_path }}"
+      register: all_logs
+      when: action == 'logs' and service is not defined
+
+    - name: Display all logs
+      debug:
+        msg: "{{ all_logs.stdout_lines }}"
+      when: action == 'logs' and service is not defined
+
+    - name: Get service status
+      command: docker-compose -f {{ docker_compose_file }} ps
+      args:
+        chdir: "{{ microservices_path }}"
+      register: services_status
+      when: action == 'status' or action == 'ps'
+
+    - name: Display service status
+      debug:
+        msg: "{{ services_status.stdout_lines }}"
+      when: action == 'status' or action == 'ps'
+
+  post_tasks:
+    - name: Display action summary
+      debug:
+        msg:
+          - "Action '{{ action }}' completed successfully"
+          - "Service: {{ service | default('all') }}"

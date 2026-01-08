@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb-user
+spec:
+  serviceName: mongodb-user
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb-user
+  template:
+    metadata:
+      labels:
+        app: mongodb-user
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+              name: mongodb
+          volumeMounts:
+            - name: mongo-user-storage
+              mountPath: /data/db
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-user-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-user
+spec:
+  selector:
+    app: mongodb-user
+  ports:
+    - port: 27017
+      targetPort: 27017
+  clusterIP: None

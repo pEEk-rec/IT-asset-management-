@@ -1,0 +1,23 @@
+# Project paths
+project_root: "/mnt/e/SEM-5/Cloud_Computing/IT_asset"
+microservices_path: "/mnt/e/SEM-5/Cloud_Computing/IT_asset/IT_ASSETMANAGEMENT_MICROSERVICES"
+docker_compose_file: "/mnt/e/SEM-5/Cloud_Computing/IT_asset/IT_ASSETMANAGEMENT_MICROSERVICES/docker-compose.microservices.yaml"
+
+# Service configuration
+services:
+  - api-gateway
+  - auth-service
+  - asset-service
+  - user-service
+  - mongodb-auth
+  - mongodb-asset
+  - mongodb-user
+  - frontend
+
+# Docker configuration
+docker_compose_version: "2.24.0"
+docker_version: "24.0"
+
+# Backup configuration
+backup_dir: "{{ project_root }}/backups"
+backup_retention_days: 7

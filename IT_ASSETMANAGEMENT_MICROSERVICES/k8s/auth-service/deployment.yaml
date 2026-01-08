@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: auth-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5101
+          env:
+            - name: PORT
+              value: "5101"
+            - name: MONGODB_URI
+              value: "mongodb://mongodb-auth:27017/auth_db"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: microservices-secrets
+                  key: jwt-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5101
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5101
+            initialDelaySeconds: 10
+            periodSeconds: 5
