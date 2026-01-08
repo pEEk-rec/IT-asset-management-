@@ -38,37 +38,43 @@ The application is decomposed into the following microservices:
 
 ---
 
-## 📂 Project Structure
+## 📥 Installation & Setup Guide
 
+Follow these steps to set up the project from scratch.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/pEEk-rec/IT-asset-management-.git
+cd IT-asset-management-
 ```
-IT_ASSETMANAGEMENT/
-├── IT_ASSETMANAGEMENT_MICROSERVICES/   # Source code for all services
-│   ├── services/                       # Backend microservices
-│   ├── ui/                             # Frontend React application
-│   ├── k8s/                            # Kubernetes manifests
-│   └── docker-compose.microservices.yaml
-│
-├── IT_ASSETMANAGEMENT_ANSIBLE/         # Ansible automation
-│   ├── playbooks/                      # Automation scripts
-│   ├── roles/                          # Reusable roles (docker, microservices)
-│   └── inventory/                      # Host configuration
-│
-└── IT_ASSETMANAGEMENT_PROJECT_DOCKERIZED/ # Original Monolith (Reference)
-```
+
+### 2. Prerequisites & Dependencies
+
+To run this project, you need the following installed:
+
+-   **Docker Desktop**: [Download for Windows/Mac/Linux](https://www.docker.com/products/docker-desktop/)
+    -   Ensure Docker Compose is included (it usually is).
+-   **WSL 2 (Windows Only)**: [Install WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (Recommended for Ansible).
+    -   Run `wsl --install` in PowerShell.
+-   **Ansible** (For automation):
+    -   Inside WSL (Ubuntu): `sudo apt update && sudo apt install ansible`
+
+*No local Node.js or MongoDB installation is required as everything runs in Docker containers.*
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Deployment Methods
 
-You can deploy this project using three methods, ranked by level of automation.
+Choose one of the following methods to deploy the application.
 
 ### Method 1: Ansible Automation (Recommended) 🤖
 
-**Prerequisites**: WSL2 (Ubuntu), Ansible.
+This method automates the entire process: checking requirements, building images, and deploying services.
 
-1.  **Navigate to Ansible directory**:
+1.  **Open WSL** (if on Windows) and navigate to the project:
     ```bash
-    cd IT_ASSETMANAGEMENT_ANSIBLE
+    cd /mnt/e/path/to/repo/IT_ASSETMANAGEMENT_ANSIBLE
     ```
 
 2.  **Test Connectivity**:
@@ -80,23 +86,21 @@ You can deploy this project using three methods, ranked by level of automation.
     ```bash
     ansible-playbook -i inventory/hosts.yml playbooks/02-deploy-microservices.yml
     ```
-
-    This single command will:
-    - Check Docker installation.
-    - Stop existing containers.
-    - Build all microservice images.
-    - Start all services.
-    - Wait for initialization.
-    - Perform health checks.
+    *This single command builds all images and starts the containers.*
 
 4.  **Access the App**:
-    - Frontend: [http://localhost:4000](http://localhost:4000)
+    -   Frontend: [http://localhost:4000](http://localhost:4000)
+
+**Manage Services with Ansible**:
+-   **Status**: `ansible-playbook -i inventory/hosts.yml playbooks/03-manage-services.yml -e "action=status"`
+-   **Logs**: `ansible-playbook -i inventory/hosts.yml playbooks/03-manage-services.yml -e "action=logs"`
+-   **Stop**: `ansible-playbook -i inventory/hosts.yml playbooks/03-manage-services.yml -e "action=stop"`
 
 ---
 
 ### Method 2: Docker Compose (Manual) 🐳
 
-**Prerequisites**: Docker, Docker Compose.
+If you prefer using standard Docker commands without Ansible.
 
 1.  **Navigate to Microservices directory**:
     ```bash
@@ -117,11 +121,17 @@ You can deploy this project using three methods, ranked by level of automation.
 
 ### Method 3: Kubernetes (Production) ☸️
 
+For deploying to a Kubernetes cluster (like Minikube).
+
 **Prerequisites**: Minikube, Kubectl.
+**Detailed Guide**: See `IT_ASSETMANAGEMENT_MICROSERVICES/KUBERNETES_DEPLOYMENT.md`
 
-1.  **Apply Manifests**:
-    See `IT_ASSETMANAGEMENT_MICROSERVICES/KUBERNETES_DEPLOYMENT.md` for detailed steps.
+1.  **Start Minikube**:
+    ```bash
+    minikube start
+    ```
 
+2.  **Apply Manifests**:
     ```bash
     kubectl apply -f k8s/configmap.yaml
     kubectl apply -f k8s/secrets.yaml
@@ -132,6 +142,26 @@ You can deploy this project using three methods, ranked by level of automation.
     kubectl apply -f k8s/api-gateway/
     kubectl apply -f k8s/frontend/
     ```
+
+---
+
+## 📂 Project Structure
+
+```
+IT_ASSETMANAGEMENT/
+├── IT_ASSETMANAGEMENT_MICROSERVICES/   # Source code for all services
+│   ├── services/                       # Backend microservices
+│   ├── ui/                             # Frontend React application
+│   ├── k8s/                            # Kubernetes manifests
+│   └── docker-compose.microservices.yaml
+│
+├── IT_ASSETMANAGEMENT_ANSIBLE/         # Ansible automation
+│   ├── playbooks/                      # Automation scripts
+│   ├── roles/                          # Reusable roles (docker, microservices)
+│   └── inventory/                      # Host configuration
+│
+└── IT_ASSETMANAGEMENT_PROJECT_DOCKERIZED/ # Original Monolith (Reference)
+```
 
 ---
 
